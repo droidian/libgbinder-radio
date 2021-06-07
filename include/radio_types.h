@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2018-2021 Jolla Ltd.
  * Copyright (C) 2018-2021 Slava Monich <slava.monich@jolla.com>
+ * Copyright (C) 2021 Open Mobile Platform LLC.
  *
  * You may use this file under the terms of the BSD license as follows:
  *
@@ -145,6 +146,16 @@ typedef enum radio_cell_info_type {
     RADIO_CELL_INFO_TD_SCDMA
 } RADIO_CELL_INFO_TYPE;
 G_STATIC_ASSERT(sizeof(RADIO_CELL_INFO_TYPE) == 4);
+
+/* Cast guint8 RadioCellInfo_1_4.cellInfoType to this. */
+typedef enum radio_cell_info_type_1_4 {
+    RADIO_CELL_INFO_1_4_GSM = 0,
+    RADIO_CELL_INFO_1_4_CDMA,
+    RADIO_CELL_INFO_1_4_WCDMA,
+    RADIO_CELL_INFO_1_4_TD_SCDMA,
+    RADIO_CELL_INFO_1_4_LTE,
+    RADIO_CELL_INFO_1_4_NR
+} RADIO_CELL_INFO_TYPE_1_4; /* Since 1.4.1 */
 
 typedef enum radio_tech {
     RADIO_TECH_UNKNOWN = 0,
@@ -415,6 +426,15 @@ typedef struct radio_card_status_1_2 {
     GBinderHidlString iccid RADIO_ALIGNED(8);
 } RADIO_ALIGNED(8) RadioCardStatus_1_2; /* Since 1.2.3 */
 G_STATIC_ASSERT(sizeof(RadioCardStatus_1_2) == 80);
+
+typedef struct radio_card_status_1_4 {
+    RadioCardStatus base RADIO_ALIGNED(8);
+    gint32 physicalSlotId RADIO_ALIGNED(4);
+    GBinderHidlString atr RADIO_ALIGNED(8);
+    GBinderHidlString iccid RADIO_ALIGNED(8);
+    GBinderHidlString eid RADIO_ALIGNED(8);
+} RADIO_ALIGNED(8) RadioCardStatus_1_4; /* Since 1.4.0 */
+G_STATIC_ASSERT(sizeof(RadioCardStatus_1_4) == 96);
 
 typedef struct radio_app_status {
     RADIO_APP_TYPE appType RADIO_ALIGNED(4);
@@ -812,6 +832,22 @@ typedef struct radio_data_reg_state_result_1_2 {
 } RADIO_ALIGNED(8) RadioDataRegStateResult_1_2;  /* Since 1.2.4 */
 G_STATIC_ASSERT(sizeof(RadioDataRegStateResult_1_2) == 104);
 
+typedef struct radio_data_reg_lte_vops_info {
+    guint32 isVopsSupported RADIO_ALIGNED(4);
+    guint32 isEmcBearerSupported RADIO_ALIGNED(4);
+} RADIO_ALIGNED(4) RadioDataRegLteVopsInfo;  /* Since 1.4.0 */
+G_STATIC_ASSERT(sizeof(RadioDataRegLteVopsInfo) == 8);
+
+typedef struct radio_data_reg_state_result_1_4 {
+    RADIO_REG_STATE regState RADIO_ALIGNED(4);
+    RADIO_TECH rat RADIO_ALIGNED(4);
+    gint32 reasonDataDenied RADIO_ALIGNED(4);
+    gint32 maxDataCalls RADIO_ALIGNED(4);
+    RadioCellIdentity_1_2 cellIdentity RADIO_ALIGNED(8);
+    RadioDataRegLteVopsInfo lteVopsInfo RADIO_ALIGNED(4);
+} RADIO_ALIGNED(8) RadioDataRegStateResult_1_4;  /* Since 1.4.0 */
+G_STATIC_ASSERT(sizeof(RadioDataRegStateResult_1_4) == 112);
+
 typedef struct radio_signal_strength_gsm {
     guint32 signalStrength RADIO_ALIGNED(4);
     guint32 bitErrorRate RADIO_ALIGNED(4);
@@ -982,9 +1018,9 @@ typedef struct radio_cell_info_nr {
 G_STATIC_ASSERT(sizeof(RadioCellInfoNr) == 112);
 
 typedef struct radio_cell_info_1_4 {
-    guint8 cellInfoType RADIO_ALIGNED(1);
-    guint8 registered RADIO_ALIGNED(1);
-    RADIO_CELL_CONNECTION_STATUS connectionStatus RADIO_ALIGNED(4);
+    guint32 registered RADIO_ALIGNED(1);
+    guint32 connectionStatus RADIO_ALIGNED(4);
+    guint8 cellInfoType RADIO_ALIGNED(1); /* RADIO_CELL_INFO_TYPE_1_4 */
     union {
         RadioCellInfoGsm_1_2 gsm RADIO_ALIGNED(8);
         RadioCellInfoCdma_1_2 cdma RADIO_ALIGNED(8);
@@ -994,7 +1030,7 @@ typedef struct radio_cell_info_1_4 {
         RadioCellInfoNr nr RADIO_ALIGNED(8);
     } info RADIO_ALIGNED(8);
 } RADIO_ALIGNED(8) RadioCellInfo_1_4; /* Since 1.2.5 */
-G_STATIC_ASSERT(sizeof(RadioCellInfo_1_4) == 128);
+G_STATIC_ASSERT(sizeof(RadioCellInfo_1_4) == 136);
 
 typedef struct radio_gsm_broadcast_sms_config {
     gint32 fromServiceId RADIO_ALIGNED(4);

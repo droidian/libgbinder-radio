@@ -1,3 +1,16 @@
+libgbinder-radio (1.4.1) unstable; urgency=medium
+
+  * Added RADIO_CELL_INFO_TYPE_1_4 enum
+
+ -- Slava Monich <slava.monich@jolla.com>  Thu, 20 May 2021 16:32:16 +0300
+
+libgbinder-radio (1.4.0) unstable; urgency=medium
+
+  * Support for radio@1.4 interfaces
+  * Fixed RadioCellInfo_1_4 definition
+
+ -- Slava Monich <slava.monich@jolla.com>  Tue, 18 May 2021 18:54:52 +0300
+
 libgbinder-radio (1.2.6) unstable; urgency=medium
 
   * Added RadioSimApdu type
