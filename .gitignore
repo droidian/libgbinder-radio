@@ -13,3 +13,6 @@ unit/coverage/report
 installroot
 build
 RPMS
+
+# Added by Droidian
+!.circleci/
