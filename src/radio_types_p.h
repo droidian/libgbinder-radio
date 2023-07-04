@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2018-2021 Jolla Ltd.
- * Copyright (C) 2018-2021 Slava Monich <slava.monich@jolla.com>
+ * Copyright (C) 2021-2022 Jolla Ltd.
+ * Copyright (C) 2021-2022 Slava Monich <slava.monich@jolla.com>
  *
  * You may use this file under the terms of the BSD license as follows:
  *
@@ -34,38 +34,37 @@
  * any official policies, either expressed or implied.
  */
 
-#ifndef RADIO_UTIL_H
-#define RADIO_UTIL_H
+#ifndef RADIO_TYPES_PRIVATE_H
+#define RADIO_TYPES_PRIVATE_H
 
 #include <radio_types.h>
 
-G_BEGIN_DECLS
+typedef struct radio_base RadioBase;
 
-const char*
-radio_req_name(
-    RADIO_REQ req);
+#define RADIO_INTERNAL G_GNUC_INTERNAL
 
-const char*
-radio_resp_name(
-    RADIO_RESP resp);
+/* Miliseconds to microseconds */
+#define MICROSEC(ms) (((gint64)(ms)) * 1000)
 
-const char*
-radio_ind_name(
-    RADIO_IND ind);
+/* Preprocessor magic related to observers */
+G_STATIC_ASSERT(RADIO_OBSERVER_PRIORITY_LOWEST == 0);
+G_STATIC_ASSERT(RADIO_OBSERVER_PRIORITY_HIGHEST == 7);
+#define FOREACH_OBSERVER_PRIORITY(p) p(0) p(1) p(2) p(3) p(4) p(5) p(6) p(7)
+#define RADIO_OBSERVER_PRIORITY_INDEX(p) ((p) - RADIO_OBSERVER_PRIORITY_LOWEST)
+#define RADIO_OBSERVER_PRIORITY_COUNT \
+    (RADIO_OBSERVER_PRIORITY_INDEX(RADIO_OBSERVER_PRIORITY_HIGHEST) + 1)
 
-RADIO_RESP
-radio_req_resp(
-    RADIO_REQ req)
-    G_GNUC_DEPRECATED_FOR(radio_req_resp2);
+/*
+ * A special assert fatal in debug build and non-fatal in release.
+ * Marks truely unavoidable conditions.
+ */
+#ifdef DEBUG
+#  define DEBUG_ASSERT(expr) g_assert(expr)
+#else
+#  define DEBUG_ASSERT(expr)
+#endif
 
-RADIO_RESP
-radio_req_resp2(
-    RADIO_REQ req,
-    RADIO_INTERFACE iface); /* Since 1.4.5 */
-
-G_END_DECLS
-
-#endif /* RADIO_UTIL_H */
+#endif /* RADIO_TYPES_PRIVATE_H */
 
 /*
  * Local Variables:

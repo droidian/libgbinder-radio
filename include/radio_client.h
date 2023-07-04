@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2018-2021 Jolla Ltd.
- * Copyright (C) 2018-2021 Slava Monich <slava.monich@jolla.com>
+ * Copyright (C) 2021 Jolla Ltd.
+ * Copyright (C) 2021 Slava Monich <slava.monich@jolla.com>
  *
  * You may use this file under the terms of the BSD license as follows:
  *
@@ -34,38 +34,105 @@
  * any official policies, either expressed or implied.
  */
 
-#ifndef RADIO_UTIL_H
-#define RADIO_UTIL_H
+#ifndef RADIO_CLIENT_H
+#define RADIO_CLIENT_H
+
+/* This API exists since 1.4.3 */
 
 #include <radio_types.h>
 
 G_BEGIN_DECLS
 
-const char*
-radio_req_name(
-    RADIO_REQ req);
+typedef
+void
+(*RadioClientIndicationFunc)(
+    RadioClient* client,
+    RADIO_IND code,
+    const GBinderReader* reader,
+    gpointer user_data);
+
+typedef
+void
+(*RadioClientFunc)(
+    RadioClient* client,
+    gpointer user_data);
+
+RadioClient*
+radio_client_new(
+    RadioInstance* instance)
+    G_GNUC_WARN_UNUSED_RESULT;
+
+RadioClient*
+radio_client_ref(
+    RadioClient* client);
+
+void
+radio_client_unref(
+    RadioClient* client);
+
+RADIO_INTERFACE
+radio_client_interface(
+    RadioClient* client);
 
 const char*
-radio_resp_name(
-    RADIO_RESP resp);
+radio_client_slot(
+    RadioClient* client);
 
-const char*
-radio_ind_name(
-    RADIO_IND ind);
+gboolean
+radio_client_dead(
+    RadioClient* client);
 
-RADIO_RESP
-radio_req_resp(
-    RADIO_REQ req)
-    G_GNUC_DEPRECATED_FOR(radio_req_resp2);
+gboolean
+radio_client_connected(
+    RadioClient* client);
 
-RADIO_RESP
-radio_req_resp2(
-    RADIO_REQ req,
-    RADIO_INTERFACE iface); /* Since 1.4.5 */
+void
+radio_client_set_default_timeout(
+    RadioClient* client,
+    int milliseconds);
+
+gulong
+radio_client_add_indication_handler(
+    RadioClient* client,
+    RADIO_IND code,
+    RadioClientIndicationFunc func,
+    gpointer user_data);
+
+gulong
+radio_client_add_owner_changed_handler(
+    RadioClient* client,
+    RadioClientFunc func,
+    gpointer user_data);
+
+gulong
+radio_client_add_death_handler(
+    RadioClient* client,
+    RadioClientFunc func,
+    gpointer user_data);
+
+gulong
+radio_client_add_connected_handler(
+    RadioClient* client,
+    RadioClientFunc func,
+    gpointer user_data);
+
+void
+radio_client_remove_handler(
+    RadioClient* client,
+    gulong id);
+
+void
+radio_client_remove_handlers(
+    RadioClient* client,
+    gulong* ids,
+    int count);
+
+#define radio_client_remove_all_handlers(client,ids) \
+    radio_client_remove_handlers(client, ids, G_N_ELEMENTS(ids))
 
 G_END_DECLS
 
-#endif /* RADIO_UTIL_H */
+#endif /* RADIO_CLIENT_H */
 
 /*
  * Local Variables:

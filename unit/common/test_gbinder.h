@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2021 Jolla Ltd.
- * Copyright (C) 2021 Slava Monich <slava.monich@jolla.com>
+ * Copyright (C) 2021-2022 Jolla Ltd.
+ * Copyright (C) 2021-2022 Slava Monich <slava.monich@jolla.com>
  *
  * You may use this file under the terms of BSD license as follows:
  *
@@ -41,7 +41,7 @@ typedef struct test_gbinder_data TestGBinderData;
 
 TestGBinderData*
 test_gbinder_data_new(
-    void);
+    const char* iface);
 
 TestGBinderData*
 test_gbinder_data_ref(
@@ -141,6 +141,10 @@ test_gbinder_remote_object_dead(
 GBinderLocalObject*
 test_gbinder_remote_object_to_local(
     GBinderRemoteObject* remote);
+
+/* test_gbinder_client.c */
+
+extern int test_gbinder_client_tx_fail_count;
 
 /* test_gbinder_servicemanager.c */
 

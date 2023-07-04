@@ -63,7 +63,7 @@ test_gbinder_local_reply_new(
     GBinderLocalReply* self = g_new0(GBinderLocalReply, 1);
 
     g_atomic_int_set(&self->refcount, 1);
-    self->data = test_gbinder_data_new();
+    self->data = test_gbinder_data_new(NULL);
     return self;
 }
 

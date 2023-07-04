@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2018-2021 Jolla Ltd.
- * Copyright (C) 2018-2021 Slava Monich <slava.monich@jolla.com>
+ * Copyright (C) 2021 Jolla Ltd.
+ * Copyright (C) 2021 Slava Monich <slava.monich@jolla.com>
  *
  * You may use this file under the terms of the BSD license as follows:
  *
@@ -34,38 +34,51 @@
  * any official policies, either expressed or implied.
  */
 
-#ifndef RADIO_UTIL_H
-#define RADIO_UTIL_H
+#ifndef RADIO_INSTANCE_PRIVATE_H
+#define RADIO_INSTANCE_PRIVATE_H
 
-#include <radio_types.h>
+#include "radio_types_p.h"
+#include "radio_instance.h"
 
-G_BEGIN_DECLS
+typedef
+void
+(*RadioInstanceTxCompleteFunc)(
+    RadioInstance* instance,
+    gulong id,
+    int status,
+    void* user_data1,
+    void* user_data2);
 
-const char*
-radio_req_name(
-    RADIO_REQ req);
+typedef
+void
+(*RadioInstanceTxDestroyFunc)(
+    void* user_data1,
+    void* user_data2);
 
-const char*
-radio_resp_name(
-    RADIO_RESP resp);
+gulong
+radio_instance_send_request(
+    RadioInstance* instance,
+    RADIO_REQ code,
+    GBinderLocalRequest* args,
+    RadioInstanceTxCompleteFunc complete,
+    RadioInstanceTxDestroyFunc destroy,
+    void* user_data1,
+    void* user_data2)
+    RADIO_INTERNAL;
 
-const char*
-radio_ind_name(
-    RADIO_IND ind);
+void
+radio_instance_cancel_request(
+    RadioInstance* instance,
+    gulong id)
+    RADIO_INTERNAL;
 
-RADIO_RESP
-radio_req_resp(
-    RADIO_REQ req)
-    G_GNUC_DEPRECATED_FOR(radio_req_resp2);
+GQuark
+radio_instance_ind_quark(
+    RadioInstance* instance,
+    RADIO_IND ind)
+    RADIO_INTERNAL;
 
-RADIO_RESP
-radio_req_resp2(
-    RADIO_REQ req,
-    RADIO_INTERFACE iface); /* Since 1.4.5 */
-
-G_END_DECLS
-
-#endif /* RADIO_UTIL_H */
+#endif /* RADIO_INSTANCE_PRIVATE_H */
 
 /*
  * Local Variables:

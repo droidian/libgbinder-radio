@@ -1,18 +1,24 @@
 Name: libgbinder-radio
 
-Version: 1.4.2
+Version: 1.5.5
 Release: 0
 Summary: Binder client library for Android radio interfaces
 License: BSD
 URL: https://github.com/mer-hybris/libgbinder-radio
 Source: %{name}-%{version}.tar.bz2
 
-%define libgbinder_version 1.0.9
-%define libglibutil_version 1.0.34
+%define libgbinder_version 1.1.14
+%define libglibutil_version 1.0.49
 
+BuildRequires: pkgconfig
 BuildRequires: pkgconfig(glib-2.0)
 BuildRequires: pkgconfig(libglibutil) >= %{libglibutil_version}
 BuildRequires: pkgconfig(libgbinder) >= %{libgbinder_version}
+
+# license macro requires rpm >= 4.11
+BuildRequires: pkgconfig(rpm)
+%define license_support %(pkg-config --exists 'rpm >= 4.11'; echo $?)
+
 Requires: libglibutil >= %{libglibutil_version}
 Requires: libgbinder >= %{libgbinder_version}
 Requires(post): /sbin/ldconfig
@@ -24,7 +30,6 @@ Binder client library for Android radio interfaces
 %package devel
 Summary: Development library for %{name}
 Requires: %{name} = %{version}
-Requires: pkgconfig
 
 %description devel
 This package contains the development library for %{name}.
@@ -49,6 +54,9 @@ make -C unit test
 %files
 %defattr(-,root,root,-)
 %{_libdir}/%{name}.so.*
+%if %{license_support} == 0
+%license LICENSE
+%endif
 
 %files devel
 %defattr(-,root,root,-)

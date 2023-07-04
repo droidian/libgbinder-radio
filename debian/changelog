@@ -1,3 +1,102 @@
+libgbinder-radio (1.5.5) unstable; urgency=medium
+
+  * Fix RADIO_CELL_IDENTITY_TYPE_1_5 enum values
+  * Add missing radio indication filter enum values for IRadio@1.5 interface
+  * Add missing RadioAppStatus_1_5 struct
+
+ -- Matti Lehtimäki <matti.lehtimaki@jolla.com>  Fri, 14 Apr 2023 22:42:38 +0300
+
+libgbinder-radio (1.5.4) unstable; urgency=medium
+
+  * Added NR specific types
+
+ -- Slava Monich <slava.monich@jolla.com>  Wed, 30 Nov 2022 19:14:38 +0200
+
+libgbinder-radio (1.5.3) unstable; urgency=medium
+
+  * Added RADIO_ACCESS_NETWORKS enum
+
+ -- Slava Monich <slava.monich@jolla.com>  Sat, 19 Nov 2022 17:48:38 +0200
+
+libgbinder-radio (1.5.2) unstable; urgency=medium
+
+  * Added network scan related types
+
+ -- Slava Monich <slava.monich@jolla.com>  Thu, 17 Nov 2022 03:12:02 +0200
+
+libgbinder-radio (1.5.1) unstable; urgency=medium
+
+  * Fixed names of IRadio 1.4 and 1.5 responses
+
+ -- Slava Monich <slava.monich@jolla.com>  Mon, 14 Nov 2022 22:34:08 +0200
+
+libgbinder-radio (1.5.0) unstable; urgency=medium
+
+  * Added support for IRadio@1.5
+  * Added support for IRadioConfig@1.2
+
+ -- Slava Monich <slava.monich@jolla.com>  Fri, 16 Sep 2022 14:13:04 +0300
+
+libgbinder-radio (1.4.12) unstable; urgency=medium
+
+  * Fixed RadioDataRegStateResult_1_4
+
+ -- Slava Monich <slava.monich@jolla.com>  Sun, 11 Sep 2022 21:37:23 +0300
+
+libgbinder-radio (1.4.11) unstable; urgency=medium
+
+  * Added radio_request_user_data()
+
+ -- Slava Monich <slava.monich@jolla.com>  Wed, 31 Aug 2022 19:10:49 +0300
+
+libgbinder-radio (1.4.10) unstable; urgency=medium
+
+  * Tweaked completion callback criteria
+
+ -- Slava Monich <slava.monich@jolla.com>  Fri, 15 Apr 2022 21:58:17 +0300
+
+libgbinder-radio (1.4.9) unstable; urgency=medium
+
+  * Added IMS types
+
+ -- Slava Monich <slava.monich@jolla.com>  Thu, 17 Feb 2022 01:47:27 +0200
+
+libgbinder-radio (1.4.8) unstable; urgency=medium
+
+  * Fixed retries of blocking requests
+
+ -- Slava Monich <slava.monich@jolla.com>  Wed, 19 Jan 2022 03:32:30 +0200
+
+libgbinder-radio (1.4.7) unstable; urgency=medium
+
+  * Fixed owner queue logic
+
+ -- Slava Monich <slava.monich@jolla.com>  Mon, 10 Jan 2022 01:03:28 +0200
+
+libgbinder-radio (1.4.6) unstable; urgency=medium
+
+  * Added RadioConfig API
+
+ -- Slava Monich <slava.monich@jolla.com>  Sat, 08 Jan 2022 20:58:06 +0200
+
+libgbinder-radio (1.4.5) unstable; urgency=medium
+
+  * Added radio_req_resp2()
+
+ -- Slava Monich <slava.monich@jolla.com>  Thu, 16 Dec 2021 01:18:54 +0200
+
+libgbinder-radio (1.4.4) unstable; urgency=medium
+
+  * Added IRadio@1.2 IndicationFilter bits
+
+ -- Slava Monich <slava.monich@jolla.com>  Tue, 14 Dec 2021 18:01:43 +0200
+
+libgbinder-radio (1.4.3) unstable; urgency=medium
+
+  * Added RadioClient and related APIs
+
+ -- Slava Monich <slava.monich@jolla.com>  Thu, 02 Dec 2021 19:08:47 +0200
+
 libgbinder-radio (1.4.2) unstable; urgency=medium
 
   * Don't assume that GBinderServiceManager is a GObject
