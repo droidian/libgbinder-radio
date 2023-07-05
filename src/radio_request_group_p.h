@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2018-2021 Jolla Ltd.
- * Copyright (C) 2018-2021 Slava Monich <slava.monich@jolla.com>
+ * Copyright (C) 2021 Jolla Ltd.
+ * Copyright (C) 2021 Slava Monich <slava.monich@jolla.com>
  *
  * You may use this file under the terms of the BSD license as follows:
  *
@@ -34,38 +34,25 @@
  * any official policies, either expressed or implied.
  */
 
-#ifndef RADIO_UTIL_H
-#define RADIO_UTIL_H
+#ifndef RADIO_REQUEST_GROUP_PRIVATE_H
+#define RADIO_REQUEST_GROUP_PRIVATE_H
 
-#include <radio_types.h>
+#include "radio_types_p.h"
+#include <radio_request_group.h>
 
-G_BEGIN_DECLS
+void
+radio_request_group_add(
+    RadioRequestGroup* group,
+    RadioRequest* req)
+    RADIO_INTERNAL;
 
-const char*
-radio_req_name(
-    RADIO_REQ req);
+void
+radio_request_group_remove(
+    RadioRequestGroup* group,
+    RadioRequest* req)
+    RADIO_INTERNAL;
 
-const char*
-radio_resp_name(
-    RADIO_RESP resp);
-
-const char*
-radio_ind_name(
-    RADIO_IND ind);
-
-RADIO_RESP
-radio_req_resp(
-    RADIO_REQ req)
-    G_GNUC_DEPRECATED_FOR(radio_req_resp2);
-
-RADIO_RESP
-radio_req_resp2(
-    RADIO_REQ req,
-    RADIO_INTERFACE iface); /* Since 1.4.5 */
-
-G_END_DECLS
-
-#endif /* RADIO_UTIL_H */
+#endif /* RADIO_REQUEST_GROUP_PRIVATE_H */
 
 /*
  * Local Variables:

@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2021 Jolla Ltd.
- * Copyright (C) 2021 Slava Monich <slava.monich@jolla.com>
+ * Copyright (C) 2021-2022 Jolla Ltd.
+ * Copyright (C) 2021-2022 Slava Monich <slava.monich@jolla.com>
  *
  * You may use this file under the terms of the BSD license as follows:
  *
@@ -38,6 +38,8 @@
 
 #include <gutil_log.h>
 
+#include <stdlib.h>
+
 typedef struct test_gbinder_client_tx {
     GBinderClient* client;
     guint32 code;
@@ -50,6 +52,7 @@ typedef struct test_gbinder_client_tx {
 
 typedef struct test_gbinder_client_iface_range {
     char* iface;
+    GBytes* header;
     guint32 last_code;
 } TestGBinderClientIfaceRange;
 
@@ -60,6 +63,8 @@ struct gbinder_client {
     guint nr;
 };
 
+int test_gbinder_client_tx_fail_count = 0;
+
 static
 void
 test_gbinder_client_free(
@@ -68,7 +73,10 @@ test_gbinder_client_free(
     guint i;
 
     for (i = 0; i < self->nr; i++) {
-        g_free(self->ranges[i].iface);
+        TestGBinderClientIfaceRange* r = self->ranges + i;
+
+        g_bytes_unref(r->header);
+        g_free(r->iface);
     }
     g_free(self->ranges);
     gbinder_remote_object_unref(self->remote);
@@ -81,6 +89,7 @@ test_gbinder_client_init_range(
     TestGBinderClientIfaceRange* r,
     const GBinderClientIfaceInfo* info)
 {
+    r->header = g_bytes_new(info->iface, strlen(info->iface));
     r->iface = g_strdup(info->iface);
     r->last_code = info->last_code;
 }
@@ -183,7 +192,9 @@ test_gbinder_client_tx_handle(
     GBinderRemoteReply* reply = test_gbinder_client_transact
         (tx->client, tx->code, tx->flags, tx->req, &status);
 
-    tx->reply(tx->client, reply, status, tx->user_data);
+    if (tx->reply) {
+        tx->reply(tx->client, reply, status, tx->user_data);
+    }
     gbinder_remote_reply_unref(reply);
     return G_SOURCE_REMOVE;
 }
@@ -262,6 +273,22 @@ gbinder_client_unref(
     }
 }
 
+GBytes*
+gbinder_client_rpc_header(
+    GBinderClient* self,
+    guint32 code)
+{
+    if (self) {
+        const TestGBinderClientIfaceRange* r =
+            test_gbinder_client_find_range(self, code);
+
+        if (r) {
+            return r->header;
+        }
+    }
+    return NULL;
+}
+
 GBinderLocalRequest*
 gbinder_client_new_request2(
     GBinderClient* self,
@@ -317,31 +344,38 @@ gbinder_client_transact(
         GBinderRemoteObject* obj = self->remote;
 
         if (!test_gbinder_remote_object_dead(obj)) {
-            GBinderLocalRequest* tmp = NULL;
-
-            if (!req) {
-                const TestGBinderClientIfaceRange* r =
-                    test_gbinder_client_find_range(self, code);
-
-                if (r) {
-                    req = tmp = test_gbinder_local_request_new(r->iface);
+            if (test_gbinder_client_tx_fail_count) {
+                if (test_gbinder_client_tx_fail_count > 0) {
+                    test_gbinder_client_tx_fail_count--;
                 }
-            }
-            if (req) {
-                TestGBinderClientTx* tx = g_new0(TestGBinderClientTx, 1);
+                GDEBUG("Simulating transaction failure");
+            } else {
+                GBinderLocalRequest* tmp = NULL;
 
-                tx->client = gbinder_client_ref(self);
-                tx->code = code;
-                tx->flags = flags;
-                tx->req = gbinder_local_request_ref(req);
-                tx->reply = reply;
-                tx->destroy = destroy;
-                tx->user_data = user_data;
-                id = g_idle_add_full(G_PRIORITY_DEFAULT,
-                    test_gbinder_client_tx_handle, tx,
-                    test_gbinder_client_tx_destroy);
+                if (!req) {
+                    const TestGBinderClientIfaceRange* r =
+                        test_gbinder_client_find_range(self, code);
+
+                    if (r) {
+                        req = tmp = test_gbinder_local_request_new(r->iface);
+                    }
+                }
+                if (req) {
+                    TestGBinderClientTx* tx = g_new0(TestGBinderClientTx, 1);
+
+                    tx->client = gbinder_client_ref(self);
+                    tx->code = code;
+                    tx->flags = flags;
+                    tx->req = gbinder_local_request_ref(req);
+                    tx->reply = reply;
+                    tx->destroy = destroy;
+                    tx->user_data = user_data;
+                    id = g_idle_add_full(G_PRIORITY_DEFAULT,
+                        test_gbinder_client_tx_handle, tx,
+                        test_gbinder_client_tx_destroy);
+                }
+                gbinder_local_request_unref(tmp);
             }
-            gbinder_local_request_unref(tmp);
         } else {
             GDEBUG("Refusing to perform transaction with a dead object");
         }
@@ -354,7 +388,9 @@ gbinder_client_cancel(
     GBinderClient* self,
     gulong id)
 {
-    g_source_remove((guint)id);
+    if (id) {
+        g_source_remove((guint)id);
+    }
 }
 
 /*

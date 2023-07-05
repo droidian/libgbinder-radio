@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2018-2021 Jolla Ltd.
- * Copyright (C) 2018-2021 Slava Monich <slava.monich@jolla.com>
+ * Copyright (C) 2021 Jolla Ltd.
+ * Copyright (C) 2021 Slava Monich <slava.monich@jolla.com>
  *
  * You may use this file under the terms of the BSD license as follows:
  *
@@ -34,38 +34,58 @@
  * any official policies, either expressed or implied.
  */
 
-#ifndef RADIO_UTIL_H
-#define RADIO_UTIL_H
+#ifndef RADIO_REQUEST_GROUP_H
+#define RADIO_REQUEST_GROUP_H
+
+/* This API exists since 1.4.3 */
 
 #include <radio_types.h>
 
+/*
+ * In addition to being just a group of requests and making it easier
+ * to perform bulk operations (i.e. cancel all), RadioRequestGroup can
+ * be given the "blocker" status by its RadioClient and then only requests
+ * belonging to this group will be submitted until the block is released.
+ */
+
 G_BEGIN_DECLS
 
-const char*
-radio_req_name(
-    RADIO_REQ req);
+struct radio_request_group {
+    RadioClient* client;
+};
 
-const char*
-radio_resp_name(
-    RADIO_RESP resp);
+RadioRequestGroup*
+radio_request_group_new(
+    RadioClient* client)
+    G_GNUC_WARN_UNUSED_RESULT;
 
-const char*
-radio_ind_name(
-    RADIO_IND ind);
+RadioRequestGroup*
+radio_request_group_ref(
+    RadioRequestGroup* group);
 
-RADIO_RESP
-radio_req_resp(
-    RADIO_REQ req)
-    G_GNUC_DEPRECATED_FOR(radio_req_resp2);
+void
+radio_request_group_unref(
+    RadioRequestGroup* group);
 
-RADIO_RESP
-radio_req_resp2(
-    RADIO_REQ req,
-    RADIO_INTERFACE iface); /* Since 1.4.5 */
+void
+radio_request_group_cancel(
+    RadioRequestGroup* group);
+
+RADIO_BLOCK
+radio_request_group_block_status(
+    RadioRequestGroup* group);
+
+RADIO_BLOCK
+radio_request_group_block(
+    RadioRequestGroup* group);
+
+void
+radio_request_group_unblock(
+    RadioRequestGroup* group);
 
 G_END_DECLS
 
-#endif /* RADIO_UTIL_H */
+#endif /* RADIO_REQUEST_GROUP_H */
 
 /*
  * Local Variables:

@@ -23,8 +23,8 @@ all: debug release pkgconfig
 #
 
 VERSION_MAJOR = 1
-VERSION_MINOR = 4
-VERSION_RELEASE = 2
+VERSION_MINOR = 5
+VERSION_RELEASE = 4
 
 # Version for pkg-config
 PCVERSION = $(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_RELEASE)
@@ -47,8 +47,13 @@ LIB = $(LIB_NAME).a
 #
 
 SRC = \
+  radio_base.c \
+  radio_client.c \
+  radio_config.c \
   radio_instance.c \
   radio_registry.c \
+  radio_request.c \
+  radio_request_group.c \
   radio_util.c
 
 #
