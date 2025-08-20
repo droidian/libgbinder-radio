@@ -2,6 +2,7 @@ Source: libgbinder-radio
 Priority: optional
 Maintainer: Danct12 <danct12@disroot.org>
 Build-Depends: debhelper (>=9), libgbinder-dev , pkg-config, libglib2.0-dev, libglibutil-dev
+XS-Droidian-Extra-Repos: deb http://droidian.g.droidian.org/next-upgrade-gbinder/ trixie main
 Standards-Version: 3.9.6
 
 Package: libgbinder-radio-dev
