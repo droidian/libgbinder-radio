@@ -1,6 +1,7 @@
 /*
+ * Copyright (C) 2025 Jolla Mobile Ltd
+ * Copyright (C) 2018-2025 Slava Monich <slava@monich.com>
  * Copyright (C) 2018-2022 Jolla Ltd.
- * Copyright (C) 2018-2022 Slava Monich <slava.monich@jolla.com>
  *
  * You may use this file under the terms of the BSD license as follows:
  *
@@ -50,8 +51,11 @@
 
 #include <glib-object.h>
 
+typedef struct radio_interface_desc RadioInterfaceDesc;
+
 typedef GObjectClass RadioInstanceClass;
 struct radio_instance_priv {
+    const RadioInterfaceDesc* desc;
     GUtilIdlePool* idle;
     GBinderClient* client;
     GBinderRemoteObject* remote;
@@ -154,14 +158,27 @@ static const char* const radio_response_ifaces[] = {
 };
 G_STATIC_ASSERT(G_N_ELEMENTS(radio_response_ifaces) == RADIO_INTERFACE_COUNT + 1);
 
-typedef struct radio_interface_desc {
+struct radio_interface_desc {
     RADIO_INTERFACE version;
     RADIO_AIDL_INTERFACE aidl_interface;
     const char* radio_iface;
     const char* const* ind_ifaces;
     const char* const* resp_ifaces;
+    const RadioResponseInfo* (*read_response_info)(GBinderReader* reader);
     gint32 set_response_functions_req;
-} RadioInterfaceDesc;
+    gint32 ack_req;
+    gint32 resp_ack_req;
+};
+
+static
+const RadioResponseInfo*
+radio_instance_read_hidl_response_info(
+    GBinderReader* reader);
+
+static
+const RadioResponseInfo*
+radio_instance_read_aidl_response_info(
+    GBinderReader* reader);
 
 #define RADIO_INTERFACE_INDEX(x) (RADIO_INTERFACE_COUNT - x - 1)
 
@@ -171,9 +188,12 @@ typedef struct radio_interface_desc {
         RADIO_##v, \
         radio_indication_ifaces + RADIO_INTERFACE_INDEX(RADIO_INTERFACE_##v), \
         radio_response_ifaces + RADIO_INTERFACE_INDEX(RADIO_INTERFACE_##v), \
-        RADIO_REQ_SET_RESPONSE_FUNCTIONS
+        radio_instance_read_hidl_response_info, \
+        RADIO_REQ_SET_RESPONSE_FUNCTIONS, \
+        RADIO_REQ_RESPONSE_ACKNOWLEDGEMENT, \
+        RADIO_RESP_ACKNOWLEDGE_REQUEST
 
-static const RadioInterfaceDesc radio_interfaces[] = {
+static const RadioInterfaceDesc radio_hidl_interfaces[] = {
    { RADIO_INTERFACE_DESC(1_5) },
    { RADIO_INTERFACE_DESC(1_4) },
    { RADIO_INTERFACE_DESC(1_3) },
@@ -181,7 +201,7 @@ static const RadioInterfaceDesc radio_interfaces[] = {
    { RADIO_INTERFACE_DESC(1_1) },
    { RADIO_INTERFACE_DESC(1_0) }
 };
-G_STATIC_ASSERT(G_N_ELEMENTS(radio_interfaces) == RADIO_INTERFACE_COUNT);
+G_STATIC_ASSERT(G_N_ELEMENTS(radio_hidl_interfaces) == RADIO_INTERFACE_COUNT);
 
 static const GBinderClientIfaceInfo radio_aidl_iface_info[] = {
     {RADIO_DATA, RADIO_DATA_1_REQ_LAST},
@@ -270,7 +290,10 @@ static const RadioInterfaceDesc radio_aidl_interfaces[] = {
         RADIO_DATA,
         radio_data_indication_ifaces,
         radio_data_response_ifaces,
+        radio_instance_read_aidl_response_info,
         RADIO_DATA_REQ_SET_RESPONSE_FUNCTIONS,
+        RADIO_DATA_REQ_RESPONSE_ACKNOWLEDGEMENT,
+        RADIO_DATA_RESP_ACKNOWLEDGE_REQUEST
     },
     {
         RADIO_INTERFACE_NONE,
@@ -278,7 +301,10 @@ static const RadioInterfaceDesc radio_aidl_interfaces[] = {
         RADIO_IMS,
         radio_ims_indication_ifaces,
         radio_ims_response_ifaces,
+        radio_instance_read_aidl_response_info,
         RADIO_IMS_REQ_SET_RESPONSE_FUNCTIONS,
+        RADIO_REQ_NONE,
+        RADIO_RESP_NONE
     },
     {
         RADIO_INTERFACE_NONE,
@@ -286,7 +312,10 @@ static const RadioInterfaceDesc radio_aidl_interfaces[] = {
         RADIO_MESSAGING,
         radio_messaging_indication_ifaces,
         radio_messaging_response_ifaces,
+        radio_instance_read_aidl_response_info,
         RADIO_MESSAGING_REQ_SET_RESPONSE_FUNCTIONS,
+        RADIO_MESSAGING_REQ_RESPONSE_ACKNOWLEDGEMENT,
+        RADIO_MESSAGING_RESP_ACKNOWLEDGE_REQUEST
     },
     {
         RADIO_INTERFACE_NONE,
@@ -294,7 +323,10 @@ static const RadioInterfaceDesc radio_aidl_interfaces[] = {
         RADIO_MODEM,
         radio_modem_indication_ifaces,
         radio_modem_response_ifaces,
+        radio_instance_read_aidl_response_info,
         RADIO_MODEM_REQ_SET_RESPONSE_FUNCTIONS,
+        RADIO_MODEM_REQ_RESPONSE_ACKNOWLEDGEMENT,
+        RADIO_MODEM_RESP_ACKNOWLEDGE_REQUEST
     },
     {
         RADIO_INTERFACE_NONE,
@@ -302,7 +334,10 @@ static const RadioInterfaceDesc radio_aidl_interfaces[] = {
         RADIO_NETWORK,
         radio_network_indication_ifaces,
         radio_network_response_ifaces,
+        radio_instance_read_aidl_response_info,
         RADIO_NETWORK_REQ_SET_RESPONSE_FUNCTIONS,
+        RADIO_NETWORK_REQ_RESPONSE_ACKNOWLEDGEMENT,
+        RADIO_NETWORK_RESP_ACKNOWLEDGE_REQUEST
     },
     {
         RADIO_INTERFACE_NONE,
@@ -310,7 +345,10 @@ static const RadioInterfaceDesc radio_aidl_interfaces[] = {
         RADIO_SIM,
         radio_sim_indication_ifaces,
         radio_sim_response_ifaces,
+        radio_instance_read_aidl_response_info,
         RADIO_SIM_REQ_SET_RESPONSE_FUNCTIONS,
+        RADIO_SIM_REQ_RESPONSE_ACKNOWLEDGEMENT,
+        RADIO_SIM_RESP_ACKNOWLEDGE_REQUEST
     },
     {
         RADIO_INTERFACE_NONE,
@@ -318,7 +356,10 @@ static const RadioInterfaceDesc radio_aidl_interfaces[] = {
         RADIO_VOICE,
         radio_voice_indication_ifaces,
         radio_voice_response_ifaces,
+        radio_instance_read_aidl_response_info,
         RADIO_VOICE_REQ_SET_RESPONSE_FUNCTIONS,
+        RADIO_VOICE_REQ_RESPONSE_ACKNOWLEDGEMENT,
+        RADIO_VOICE_RESP_ACKNOWLEDGE_REQUEST
     }
 };
 G_STATIC_ASSERT(G_N_ELEMENTS(radio_aidl_interfaces) == RADIO_AIDL_INTERFACE_COUNT);
@@ -335,6 +376,27 @@ typedef struct radio_instance_tx {
 /*==========================================================================*
  * Implementation
  *==========================================================================*/
+
+static
+const RadioResponseInfo*
+radio_instance_read_hidl_response_info(
+    GBinderReader* reader)
+{
+    return gbinder_reader_read_hidl_struct(reader, RadioResponseInfo);
+}
+
+static
+const RadioResponseInfo*
+radio_instance_read_aidl_response_info(
+    GBinderReader* reader)
+{
+    gsize size = 0;
+    const RadioResponseInfo* info = gbinder_reader_read_parcelable
+        (reader, &size);
+
+    GASSERT(size >= sizeof(*info));
+    return (size >= sizeof(*info)) ? info : NULL;
+}
 
 static
 GQuark
@@ -519,76 +581,21 @@ radio_instance_response(
     void* user_data)
 {
     RadioInstance* self = RADIO_INSTANCE(user_data);
+    RadioInstancePriv* priv = self->priv;
+    const RadioInterfaceDesc* desc = priv->desc;
     const char* iface = gbinder_remote_request_interface(req);
     const RadioResponseInfo* info = NULL;
     GBinderReader reader;
     gint32 ack_serial = 0;
 
     gbinder_remote_request_init_reader(req, &reader);
-
-    if (gutil_strv_contains((const GStrV*)radio_response_ifaces, iface)) {
-        if (code == RADIO_RESP_ACKNOWLEDGE_REQUEST) {
+    if (gutil_strv_contains((GStrV*)desc->resp_ifaces, iface)) {
+        /* Weird terminology - response that requests an ack (request) */
+        if (code == desc->resp_ack_req) {
             gbinder_reader_read_int32(&reader, &ack_serial);
         } else {
             /* All other responses have RadioResponseInfo */
-            info = gbinder_reader_read_hidl_struct(&reader, RadioResponseInfo);
-        }
-    } else if (gutil_strv_contains((const GStrV*)radio_data_response_ifaces, iface)) {
-        if (code == RADIO_DATA_RESP_ACKNOWLEDGE_REQUEST) {
-            gbinder_reader_read_int32(&reader, &ack_serial);
-        } else {
-            gsize out_size;
-            info = gbinder_reader_read_parcelable(&reader, &out_size);
-            GASSERT(out_size >= sizeof(RadioResponseInfo));
-        }
-    } else if (gutil_strv_contains((const GStrV*)radio_ims_response_ifaces, iface)) {
-        {
-            /* RadioResponseInfo has the same fields/padding between HIDL and AIDL */
-            gsize out_size;
-            info = gbinder_reader_read_parcelable(&reader, &out_size);
-            GASSERT(out_size >= sizeof(RadioResponseInfo));
-        }
-    } else if (gutil_strv_contains((const GStrV*)radio_messaging_response_ifaces, iface)) {
-        if (code == RADIO_MESSAGING_RESP_ACKNOWLEDGE_REQUEST) {
-            gbinder_reader_read_int32(&reader, &ack_serial);
-        } else {
-            /* RadioResponseInfo has the same fields/padding between HIDL and AIDL */
-            gsize out_size;
-            info = gbinder_reader_read_parcelable(&reader, &out_size);
-            GASSERT(out_size >= sizeof(RadioResponseInfo));
-        }
-    } else if (gutil_strv_contains((const GStrV*)radio_modem_response_ifaces, iface)) {
-        if (code == RADIO_MODEM_RESP_ACKNOWLEDGE_REQUEST) {
-            gbinder_reader_read_int32(&reader, &ack_serial);
-        } else {
-            /* RadioResponseInfo has the same fields/padding between HIDL and AIDL */
-            gsize out_size;
-            info = gbinder_reader_read_parcelable(&reader, &out_size);
-            GASSERT(out_size >= sizeof(RadioResponseInfo));
-        }
-    } else if (gutil_strv_contains((const GStrV*)radio_network_response_ifaces, iface)) {
-        if (code == RADIO_NETWORK_RESP_ACKNOWLEDGE_REQUEST) {
-            gbinder_reader_read_int32(&reader, &ack_serial);
-        } else {
-            gsize out_size;
-            info = gbinder_reader_read_parcelable(&reader, &out_size);
-            GASSERT(out_size >= sizeof(RadioResponseInfo));
-        }
-    } else if (gutil_strv_contains((const GStrV*)radio_sim_response_ifaces, iface)) {
-        if (code == RADIO_SIM_RESP_ACKNOWLEDGE_REQUEST) {
-            gbinder_reader_read_int32(&reader, &ack_serial);
-        } else {
-            gsize out_size;
-            info = gbinder_reader_read_parcelable(&reader, &out_size);
-            GASSERT(out_size >= sizeof(RadioResponseInfo));
-        }
-    } else if (gutil_strv_contains((const GStrV*)radio_voice_response_ifaces, iface)) {
-        if (code == RADIO_VOICE_RESP_ACKNOWLEDGE_REQUEST) {
-            gbinder_reader_read_int32(&reader, &ack_serial);
-        } else {
-            gsize out_size;
-            info = gbinder_reader_read_parcelable(&reader, &out_size);
-            GASSERT(out_size >= sizeof(RadioResponseInfo));
+            info = desc->read_response_info(&reader);
         }
     } else {
         GWARN("Unexpected response %s %u", iface, code);
@@ -739,6 +746,7 @@ radio_instance_create_version(
     self->version = desc->version;
     self->interface_aidl = desc->aidl_interface;
 
+    priv->desc = desc;
     priv->remote = gbinder_remote_object_ref(remote);
     priv->indication = gbinder_servicemanager_new_local_object2(sm,
         desc->ind_ifaces, radio_instance_indication, self);
@@ -804,10 +812,10 @@ radio_instance_create(
     }
 
     if (aidl_interface == RADIO_AIDL_INTERFACE_NONE) {
-        interfaces = radio_interfaces;
-        num_interfaces = G_N_ELEMENTS(radio_interfaces);
-    } else if (aidl_interface > RADIO_AIDL_INTERFACE_NONE
-                && aidl_interface < RADIO_AIDL_INTERFACE_COUNT) {
+        interfaces = radio_hidl_interfaces;
+        num_interfaces = G_N_ELEMENTS(radio_hidl_interfaces);
+    } else if (aidl_interface > RADIO_AIDL_INTERFACE_NONE &&
+        aidl_interface < RADIO_AIDL_INTERFACE_COUNT) {
         interfaces = radio_aidl_interfaces + aidl_interface;
         num_interfaces = 1;
     }
@@ -1229,13 +1237,19 @@ radio_instance_ack(
     RadioInstance* self)
 {
     if (G_LIKELY(self)) {
-        GBinderClient* client = self->priv->client;
-        const RADIO_REQ code = RADIO_REQ_RESPONSE_ACKNOWLEDGEMENT;
+        RadioInstancePriv* priv = self->priv;
+        const guint32 code = priv->desc->ack_req;
 
-        radio_instance_notify_request_observers(self, code, NULL);
-        return gbinder_client_transact_sync_oneway(client, code, NULL) >= 0;
+        if (code != RADIO_REQ_NONE) {
+            GBinderClient* client = priv->client;
+
+            radio_instance_notify_request_observers(self, code, NULL);
+            if (gbinder_client_transact_sync_oneway(client, code, NULL) >= 0) {
+                return TRUE;
+            }
+        }
     }
-    return 0;
+    return FALSE;
 }
 
 GBinderLocalRequest*
